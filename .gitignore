@@ -1,0 +1,20 @@
+assignment2-updated.md
+AutoTestDesign-dev-plan.md
+AutoTestDesign-tool-spec.md
+autotestdesign.db
+
+# Python cache & runtime artifacts
+__pycache__/
+*.pyc
+*.pyo
+
+# Database files
+*.db
+instance/
+
+# Virtual environments
+.venv/
+venv/
+
+# Node modules
+node_modules/
