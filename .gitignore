@@ -1,16 +1,19 @@
+# Assignment files (not for repo)
 assignment2-updated.md
 AutoTestDesign-dev-plan.md
 AutoTestDesign-tool-spec.md
-autotestdesign.db
-
-# Python cache & runtime artifacts
-__pycache__/
-*.pyc
-*.pyo
 
 # Database files
 *.db
 instance/
+
+# Python cache & runtime artifacts
+__pycache__/
+*.py[cod]
+*.pyo
+*.egg-info/
+dist/
+build/
 
 # Virtual environments
 .venv/
@@ -18,3 +21,12 @@ venv/
 
 # Node modules
 node_modules/
+frontend/dist/
+
+# Environment
+.env
+.env.local
+
+# IDE
+.vscode/
+.idea/
