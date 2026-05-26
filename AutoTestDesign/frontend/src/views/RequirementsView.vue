@@ -37,6 +37,9 @@
     <el-card style="margin-bottom:16px" body-style="padding:12px 16px">
       <el-space>
         <el-button :icon="Refresh" @click="loadData" :loading="loading">Refresh</el-button>
+        <el-button type="primary" :icon="MagicStick" @click="handleParseBatch" :loading="parsing">
+          Parse All (AI)
+        </el-button>
         <el-button type="warning" :icon="MagicStick" @click="handleAnalyzeRisk" :loading="analyzing">
           Analyze Risk (AI)
         </el-button>
@@ -229,7 +232,7 @@ import { ElMessage } from 'element-plus'
 import { Refresh, MagicStick } from '@element-plus/icons-vue'
 import mermaid from 'mermaid'
 import {
-  listRequirements, analyzeRisk, parseRequirement, deleteRequirement,
+  listRequirements, analyzeRisk, parseRequirement, parseBatch, deleteRequirement,
   updateRisk, updateStructure, generateStateDiagram, getStateDiagram
 } from '../api/index.js'
 
@@ -238,6 +241,7 @@ mermaid.initialize({ startOnLoad: false, theme: 'default' })
 const requirements = ref([])
 const loading = ref(false)
 const analyzing = ref(false)
+const parsing = ref(false)
 const saving = ref(false)
 
 // computed stats
@@ -274,6 +278,19 @@ async function loadData() {
     ElMessage.error(e.message)
   } finally {
     loading.value = false
+  }
+}
+
+async function handleParseBatch() {
+  parsing.value = true
+  try {
+    const { data } = await parseBatch()
+    ElMessage.success(`Parsed ${data.length} requirement(s)`)
+    await loadData()
+  } catch (e) {
+    ElMessage.error(e.message)
+  } finally {
+    parsing.value = false
   }
 }
 

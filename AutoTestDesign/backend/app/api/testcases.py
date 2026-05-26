@@ -23,7 +23,23 @@ router = APIRouter(prefix="/testcases", tags=["testcases"])
 @router.get("/suites", response_model=list[TestSuiteRead])
 def list_test_suites(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     suites = db.query(TestSuite).order_by(TestSuite.created_at.desc()).offset(skip).limit(limit).all()
-    return [TestSuiteRead.model_validate(s) for s in suites]
+    result = []
+    for s in suites:
+        cases = db.query(TestCase).filter(TestCase.suite_id == s.id).all()
+        sr = TestSuiteRead.model_validate(s)
+        sr.test_cases = [TestCaseRead.model_validate(tc) for tc in cases]
+        result.append(sr)
+    return result
+
+
+@router.delete("/suites/{suite_id}", status_code=204)
+def delete_test_suite(suite_id: str, db: Session = Depends(get_db)):
+    suite = db.query(TestSuite).filter(TestSuite.id == suite_id).first()
+    if not suite:
+        raise HTTPException(status_code=404, detail="TestSuite not found")
+    db.query(TestCase).filter(TestCase.suite_id == suite_id).delete()
+    db.delete(suite)
+    db.commit()
 
 
 @router.post("", response_model=TestCaseRead, status_code=201)

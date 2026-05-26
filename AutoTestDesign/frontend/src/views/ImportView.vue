@@ -16,13 +16,15 @@
           </template>
           <el-form label-position="top">
             <el-form-item label="Source Type">
-              <el-radio-group v-model="form.source_type">
+              <el-radio-group v-model="form.source_type" @change="handleSourceTypeChange">
                 <el-radio-button value="direct">Direct Text</el-radio-button>
                 <el-radio-button value="csv">CSV</el-radio-button>
                 <el-radio-button value="txt">TXT File</el-radio-button>
               </el-radio-group>
             </el-form-item>
-            <el-form-item label="Content">
+
+            <!-- Direct text input -->
+            <el-form-item v-if="form.source_type === 'direct'" label="Content">
               <el-input
                 v-model="form.content"
                 type="textarea"
@@ -31,12 +33,45 @@
                 style="font-family:monospace;font-size:13px"
               />
             </el-form-item>
+
+            <!-- File upload for CSV / TXT -->
+            <el-form-item v-else :label="form.source_type === 'csv' ? 'Upload CSV File' : 'Upload TXT File'">
+              <el-upload
+                drag
+                :auto-upload="false"
+                :multiple="false"
+                :accept="form.source_type === 'csv' ? '.csv' : '.txt'"
+                :on-change="handleFileChange"
+                :on-remove="handleFileRemove"
+                :file-list="fileList"
+                :limit="1"
+                :on-exceed="() => ElMessage.warning('Only one file is allowed')"
+                style="width:100%"
+              >
+                <el-icon style="font-size:48px;color:#c0c4cc"><UploadFilled /></el-icon>
+                <div style="margin-top:8px;font-size:14px;color:#606266">
+                  Drop file here or <em style="color:#409eff">click to select</em>
+                </div>
+                <template #tip>
+                  <div style="font-size:12px;color:#909399;margin-top:4px">
+                    {{ form.source_type === 'csv' ? 'Only .csv files are accepted' : 'Only .txt files are accepted' }}
+                  </div>
+                </template>
+              </el-upload>
+              <!-- File content preview -->
+              <el-input
+                v-if="form.content"
+                v-model="form.content"
+                type="textarea"
+                :rows="6"
+                style="margin-top:12px;font-family:monospace;font-size:12px"
+                placeholder="File content preview..."
+              />
+            </el-form-item>
+
             <el-form-item>
               <el-button type="primary" @click="handleImport" :loading="loading" :icon="Upload">
                 Import
-              </el-button>
-              <el-button @click="handleParseBatch" :loading="parsing" :icon="MagicStick" style="margin-left:8px">
-                Parse All with AI
               </el-button>
             </el-form-item>
           </el-form>
@@ -58,10 +93,10 @@
             <p style="margin:0 0 12px 0;color:#64748b">Columns named <code>requirement</code>, <code>description</code>, or <code>text</code> are auto-detected.</p>
             <p style="margin:0 0 8px 0"><strong>Workflow</strong></p>
             <ol style="margin:0;padding-left:16px;color:#64748b">
-              <li>Import requirements</li>
-              <li>Click "Parse All with AI" to extract structure</li>
-              <li>Go to Requirements → Analyze Risk</li>
-              <li>Go to Test Cases → Generate</li>
+              <li>Import requirements here</li>
+              <li>Go to <strong>Requirements</strong> → click "Parse All (AI)"</li>
+              <li>Click "Analyze Risk (AI)"</li>
+              <li>Go to <strong>Test Cases</strong> → Generate</li>
             </ol>
           </div>
         </el-card>
@@ -87,13 +122,31 @@
 <script setup>
 import { ref } from 'vue'
 import { ElMessage } from 'element-plus'
-import { Upload, MagicStick, InfoFilled, CircleCheck, EditPen } from '@element-plus/icons-vue'
-import { importRequirements, parseBatch } from '../api/index.js'
+import { Upload, InfoFilled, CircleCheck, EditPen, UploadFilled } from '@element-plus/icons-vue'
+import { importRequirements } from '../api/index.js'
 
 const form = ref({ source_type: 'direct', content: '' })
 const loading = ref(false)
-const parsing = ref(false)
 const imported = ref([])
+const fileList = ref([])
+
+function handleSourceTypeChange() {
+  form.value.content = ''
+  fileList.value = []
+}
+
+function handleFileChange(file) {
+  const reader = new FileReader()
+  reader.onload = (e) => {
+    form.value.content = e.target.result
+  }
+  reader.readAsText(file.raw, 'UTF-8')
+}
+
+function handleFileRemove() {
+  form.value.content = ''
+  fileList.value = []
+}
 
 async function handleImport() {
   if (!form.value.content.trim()) return ElMessage.warning('Content is empty')
@@ -103,6 +156,7 @@ async function handleImport() {
     imported.value = data
     ElMessage.success(`Imported ${data.length} requirement(s)`)
     form.value.content = ''
+    fileList.value = []
   } catch (e) {
     ElMessage.error(e.message)
   } finally {
@@ -110,15 +164,4 @@ async function handleImport() {
   }
 }
 
-async function handleParseBatch() {
-  parsing.value = true
-  try {
-    const { data } = await parseBatch()
-    ElMessage.success(`Parsed ${data.length} requirement(s)`)
-  } catch (e) {
-    ElMessage.error(e.message)
-  } finally {
-    parsing.value = false
-  }
-}
 </script>

@@ -26,8 +26,8 @@ class Settings(BaseSettings):
     OPENAI_API_KEY: str = "sk-placeholder"
     OPENAI_BASE_URL: str = "https://api.openai.com/v1"
     OPENAI_MODEL: str = "gpt-4o"
-    OPENAI_MAX_RETRIES: int = 3
-    OPENAI_TIMEOUT: float = 60.0
+    OPENAI_MAX_RETRIES: int = 1
+    OPENAI_TIMEOUT: float = 120.0
 
 
 settings = Settings()

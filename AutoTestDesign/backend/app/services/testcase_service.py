@@ -19,10 +19,17 @@ Given a requirement, identify conditions and actions, then generate test cases f
 Return JSON: {"test_cases": [{"title": str, "preconditions": str, "input_data": {}, "expected_result": str, "priority": "high"|"medium"|"low"}]}
 Generate 3-5 test cases. Return ONLY valid JSON."""
 
-STATE_SYSTEM_PROMPT = """You are a software testing expert applying State Transition testing.
-Given a requirement, identify system states and transitions, generate test cases for state coverage.
+STATE_SYSTEM_PROMPT = """You are a software testing expert applying State Transition (Whitebox) testing.
+You are given a system requirement AND, when available, its state diagram in Mermaid stateDiagram-v2 format.
+Use the state diagram as the primary source of truth for the system's internal states and transitions.
+
+Generate test cases that achieve:
+- Every state is entered at least once (state coverage)
+- Every transition is exercised at least once (transition coverage)
+- At least one invalid/impossible transition is tested
+
 Return JSON: {"test_cases": [{"title": str, "preconditions": str, "input_data": {}, "expected_result": str, "priority": "high"|"medium"|"low"}]}
-Generate 3-5 test cases. Return ONLY valid JSON."""
+Generate 4-6 test cases. Return ONLY valid JSON."""
 
 TECHNIQUE_REGISTRY: dict[str, tuple[str, str]] = {
     "equivalence_partitioning": (EP_SYSTEM_PROMPT, "EP"),
@@ -40,13 +47,19 @@ class TestCaseService:
             technique, (EP_SYSTEM_PROMPT, technique[:2].upper())
         )
         try:
+            user_parts = [
+                f"Requirement ID: {req.id}",
+                f"Requirement: {req.raw_text}",
+                f"Structured info: {req.structured or {}}",
+            ]
+            # For state_transition, include the stored state diagram as white-box context
+            if technique == "state_transition" and req.state_diagram:
+                user_parts.append(
+                    f"\nState Diagram (Mermaid stateDiagram-v2 — internal model):\n{req.state_diagram}"
+                )
             result = await llm_client.complete_json(
                 system_prompt=system_prompt,
-                user_prompt=(
-                    f"Requirement ID: {req.id}\n"
-                    f"Requirement: {req.raw_text}\n"
-                    f"Structured info: {req.structured or {}}"
-                ),
+                user_prompt="\n".join(user_parts),
             )
             cases = []
             for tc_data in result.get("test_cases", []):
@@ -83,6 +96,15 @@ class TestCaseService:
     ) -> tuple[TestSuite, list[TestCase]]:
         if include_whitebox and "state_transition" not in techniques:
             techniques = list(techniques) + ["state_transition"]
+
+        # If whitebox is requested, pre-generate state diagrams for requirements that don't have one
+        if include_whitebox or "state_transition" in techniques:
+            from app.services.whitebox_service import whitebox_service
+            await asyncio.gather(*[
+                whitebox_service.generate_state_diagram(req)
+                for req in reqs
+                if not req.state_diagram
+            ])
 
         # Generate concurrently across requirements × techniques
         tasks = [

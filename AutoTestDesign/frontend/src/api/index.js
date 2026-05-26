@@ -29,12 +29,13 @@ export const getRiskReport = () => api.get('/risk/report')
 export const updateRisk = (id, data) => api.put(`/risk/${id}`, data)
 
 // Test Cases
-export const generateTestCases = (payload) => api.post('/testcases/generate', payload)
+export const generateTestCases = (payload) => api.post('/testcases/generate', payload, { timeout: 300000 })
 export const listTestSuites = () => api.get('/testcases/suites')
 export const listTestCases = (params) => api.get('/testcases', { params })
 export const createTestCase = (data) => api.post('/testcases', data)
 export const updateTestCase = (id, data) => api.put(`/testcases/${id}`, data)
 export const deleteTestCase = (id) => api.delete(`/testcases/${id}`)
+export const deleteSuite = (id) => api.delete(`/testcases/suites/${id}`)
 
 // Coverage / Traceability
 export const getTraceability = (suiteId) => api.get(`/coverage/${suiteId}/traceability`)
