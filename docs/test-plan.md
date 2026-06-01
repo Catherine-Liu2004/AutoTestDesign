@@ -454,15 +454,16 @@ sequenceDiagram
 
 使用 AutoTestDesign 后，预计节省人时：
 
-[
+$$
 20.5h - 16.0h = 4.5h
-]
+$$
 
 节省比例为：
 
-[
-\frac{4.5}{20.5} \times 100% \approx 21.95%
-]
+$$
+\frac{4.5}{20.5} \times 100\% \approx 21.95\%
+$$
+
 
 因此，对于本次 Flask TodoApp 测试活动，AutoTestDesign 辅助测试相较纯手工测试预计可节省约 **22%** 的人时成本。
 
